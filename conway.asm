@@ -36,7 +36,7 @@ segment .data
 	sys_terminate:	db	"stty -raw echo",0
 	; GRID TEMPLATES
 	grid_test_10:	db \
-            			        0,0,0,1,0,0,0,0,0,0, \
+					0,0,0,1,0,0,0,0,0,0, \
 					1,1,0,0,0,0,0,0,1,1, \
 					1,1,0,0,0,0,0,0,1,1, \
 					0,0,0,0,0,0,0,0,0,0, \
@@ -46,9 +46,9 @@ segment .data
 					0,0,0,0,0,0,0,0,0,0, \
 					1,1,0,0,0,0,0,0,1,1, \
 					1,1,0,0,0,0,0,0,1,1
-    
-    grid_glider_10:	db \
-             			        0,0,0,0,0,0,0,0,0,0, \
+	
+	grid_glider_10:	db \
+					0,0,0,0,0,0,0,0,0,0, \
 					0,0,0,0,0,0,0,0,0,0, \
 					0,0,0,0,0,0,0,0,0,0, \
 					0,0,0,0,1,0,0,0,0,0, \
@@ -60,7 +60,7 @@ segment .data
 					0,0,0,0,0,0,0,0,0,0
 
 	grid_full_10:	db \
-                    			1,1,1,1,1,1,1,1,1,1, \
+					1,1,1,1,1,1,1,1,1,1, \
 					1,1,1,1,1,1,1,1,1,1, \
 					1,1,1,1,1,1,1,1,1,1, \
 					1,1,1,1,1,1,1,1,1,1, \
@@ -72,7 +72,7 @@ segment .data
 					1,1,1,1,1,1,1,1,1,1
 					
 	grid_spicy_24:	db \
-                    			0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, \
+					0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, \
 					0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, \
 					0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, \
 					0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, \
@@ -98,13 +98,13 @@ segment .data
 					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 segment .bss
-    grid_buffer: resb GRID_TOTAL
+	grid_buffer: resb GRID_TOTAL
 segment .text
 	global  asm_main
 	extern printf
 	extern system
 	extern putchar
-    extern sleep
+	extern sleep
 asm_main:
 	enter	0,0
 	pusha
@@ -128,130 +128,130 @@ asm_main:
 	ret
 
 game_loop:
-    enter 0,0
-    gl_s:
-    cmp DWORD[iteration], CYCLE_LIMIT
-    jg gl_e
-    call render
-    call update
-    push SLEEP ; 2 seconds
-    call sleep
-    add esp, 4
-    inc DWORD[iteration]
-    call gl_s
-    gl_e:
-    leave
-    ret
+	enter 0,0
+	gl_s:
+	cmp DWORD[iteration], CYCLE_LIMIT
+	jg gl_e
+	call render
+	call update
+	push SLEEP ; 2 seconds
+	call sleep
+	add esp, 4
+	inc DWORD[iteration]
+	call gl_s
+	gl_e:
+	leave
+	ret
 
 update:
 	enter 12,0
 	mov lvar1, 0 ; r
-    mov lvar2, 0 ; c
-    mov lvar3, 0 ; neighbors buffer
+	mov lvar2, 0 ; c
+	mov lvar3, 0 ; neighbors buffer
 	loopR_s: ; for(r=0; r < R; r++)
-    cmp lvar1, GRID_MODIFIER
-    jg loopR_e
+	cmp lvar1, GRID_MODIFIER
+	jg loopR_e
 
-        loopC_s: ; for(c=0; c < C; c++)
-        cmp lvar2, GRID_MODIFIER
-        jg loopC_e
-        
-        push lvar2
-        push lvar1
-        call neighbors
-        add esp, 8
-        mov lvar3, eax
+		loopC_s: ; for(c=0; c < C; c++)
+		cmp lvar2, GRID_MODIFIER
+		jg loopC_e
+		
+		push lvar2
+		push lvar1
+		call neighbors
+		add esp, 8
+		mov lvar3, eax
 
-        push lvar2
-        push lvar1
-        call coordVal
-        add esp, 8
+		push lvar2
+		push lvar1
+		call coordVal
+		add esp, 8
 
-        cmp eax, DEAD
-        je DEAD_S 
+		cmp eax, DEAD
+		je DEAD_S 
 
-        LIVE_S:
-            ; LIVE CELL CONDITIONS
-            ; Any live cell with fewer than two live neighbours dies, as if caused by under-population.
-            ; if(count < 2)
-            cmp eax, 2
-            jge con1
-            push DEAD ; newar[r][c] = 0;
-            push lvar2
-            push lvar1 
-            call setBufCoord
-            add esp, 12
-            con1:
-            ; Any live cell with two or three live neighbours lives on to the next generation.
-            ; count == 2 || count == 3
-            cmp lvar3, 2
-            je con2_met
-            cmp lvar3, 3
-            je con2_met
-            jmp con2 
-            con2_met:
-            push ALIVE
-            push lvar2
-            push lvar1
-            call setBufCoord
-            add esp, 12
-            con2:
+		LIVE_S:
+			; LIVE CELL CONDITIONS
+			; Any live cell with fewer than two live neighbours dies, as if caused by under-population.
+			; if(count < 2)
+			cmp eax, 2
+			jge con1
+			push DEAD ; newar[r][c] = 0;
+			push lvar2
+			push lvar1 
+			call setBufCoord
+			add esp, 12
+			con1:
+			; Any live cell with two or three live neighbours lives on to the next generation.
+			; count == 2 || count == 3
+			cmp lvar3, 2
+			je con2_met
+			cmp lvar3, 3
+			je con2_met
+			jmp con2 
+			con2_met:
+			push ALIVE
+			push lvar2
+			push lvar1
+			call setBufCoord
+			add esp, 12
+			con2:
 
-            ; Any live cell with more than three live neighbours dies, as if by over-population.
-            ; if(count > 3)
-            cmp lvar3, 3
-            jle con3
-            push DEAD ; newar[r][c] = 0;
-            push lvar2
-            push lvar1 
-            call setBufCoord
-            add esp, 12
-            con3:
-            jmp loopC_epi
-        LIVE_E:
-        DEAD_S:
-            ; Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction. 
-            ; if(count == 3) newarr[r][c] = 1
-            cmp lvar3, 3
-            je dead_a
-            jmp dead_d
-            dead_a:
-            mov eax, ALIVE
-            jmp dead_epi 
-            dead_d:
-            mov eax, DEAD
-            jmp dead_epi
-            dead_epi:
-            push eax
-            push lvar2
-            push lvar1
-            call setBufCoord
-            add esp, 12
-            jmp loopC_epi
-        DEAD_E:
+			; Any live cell with more than three live neighbours dies, as if by over-population.
+			; if(count > 3)
+			cmp lvar3, 3
+			jle con3
+			push DEAD ; newar[r][c] = 0;
+			push lvar2
+			push lvar1 
+			call setBufCoord
+			add esp, 12
+			con3:
+			jmp loopC_epi
+		LIVE_E:
+		DEAD_S:
+			; Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction. 
+			; if(count == 3) newarr[r][c] = 1
+			cmp lvar3, 3
+			je dead_a
+			jmp dead_d
+			dead_a:
+			mov eax, ALIVE
+			jmp dead_epi 
+			dead_d:
+			mov eax, DEAD
+			jmp dead_epi
+			dead_epi:
+			push eax
+			push lvar2
+			push lvar1
+			call setBufCoord
+			add esp, 12
+			jmp loopC_epi
+		DEAD_E:
 
-        loopC_epi:
-        inc lvar2
-        jmp loopC_s
-        loopC_e:
+		loopC_epi:
+		inc lvar2
+		jmp loopC_s
+		loopC_e:
 
-    mov lvar2, 0 ; reset column counter
-    inc lvar1
-    jmp loopR_s
-    loopR_e:
+	mov lvar2, 0 ; reset column counter
+	inc lvar1
+	jmp loopR_s
+	loopR_e:
 	
-    ; Finally, let's copy the buffer to the official array
-    mov lvar1, 0
-    gc_s:
-    cmp lvar1, GRID_TOTAL
-    jg gc_e
-    mov eax, lvar1
-    mov dl, BYTE[grid_buffer + eax]
-    mov BYTE[GRID + eax], dl
+	; Finally, let's copy the buffer to the official array
+	mov lvar1, 0
+	gc_s:
+	cmp lvar1, GRID_TOTAL
+	jg gc_e
+	mov eax, lvar1
+	mov dl, BYTE[grid_buffer + eax]
+	mov BYTE[GRID + eax], dl
 
-    inc lvar1
-    jmp gc_s
-    gc_e:
+	inc lvar1
+	jmp gc_s
+	gc_e:
 
 	leave
 	ret
@@ -408,48 +408,48 @@ neighbors:
 	ret
 
 setBufCoord:
-    enter 0,0
+	enter 0,0
 	;*******************************************************
 	; arg1: row
 	; arg2: column
-    ; arg3: value
+	; arg3: value
 	;*******************************************************
 	push col
 	push row
 	call coordConv
 	add esp, 8
-    
-    ;mov ebx, arg3
-    ;xor ecx, ecx
-    xor ecx, ecx
-    mov ecx, arg3
-    ;mov cl, bl
-    
-    mov BYTE[grid_buffer + eax], cl
+	
+	;mov ebx, arg3
+	;xor ecx, ecx
+	xor ecx, ecx
+	mov ecx, arg3
+	;mov cl, bl
+	
+	mov BYTE[grid_buffer + eax], cl
 
-    leave
-    ret
+	leave
+	ret
 
 setCoord:
-    enter 0,0
+	enter 0,0
 	;*******************************************************
 	; arg1: row
 	; arg2: column
-    ; arg3: value
+	; arg3: value
 	;*******************************************************
 	; push col
 	; push row
 	; call coordConv
 	; add esp, 8
-    
-    mov ebx, arg3
-    xor ecx, ecx
-    mov cl, bl
-    
-    mov BYTE[GRID + eax], cl
+	
+	mov ebx, arg3
+	xor ecx, ecx
+	mov cl, bl
+	
+	mov BYTE[GRID + eax], cl
 
-    leave
-    ret
+	leave
+	ret
 
 coordVal:
 	enter 0,0
